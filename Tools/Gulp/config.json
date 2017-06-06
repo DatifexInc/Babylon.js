@@ -12,7 +12,7 @@
     },
     "buildConfigurations": {
         "all": [
-                "standardMaterial", "pbrMaterial", "freeCamera", "arcRotateCamera", "hemisphericLight", 
+                "standardMaterial", "pbrMaterial", "freeCamera", "arcRotateCamera", "transitionCamera", "hemisphericLight", 
                 "pointLight", "directionalLight", "spotLight", "animations", "actions", "sprites", "picking", "collisions",
                 "particles", "solidParticles", "additionalMeshes", "meshBuilder", "audio", "additionalTextures", "shadows",
                 "loader", "userData", "offline", "fresnel", "multiMaterial", "touchCamera", "procedural", "gamepad",
@@ -324,6 +324,21 @@
                 "../../src/Cameras/Inputs/babylon.arcRotateCameraPointersInput.js",
                 "../../src/Cameras/babylon.arcRotateCamera.js",
                 "../../src/Cameras/babylon.arcRotateCameraInputsManager.js"                
+            ],
+            "dependUpon" : [
+                "core"
+            ]
+        },
+        "transitionCamera" : 
+        {
+            "files": [               
+                "../../src/Cameras/babylon.cameraInputsManager.js",                
+                "../../src/Cameras/babylon.targetCamera.js",
+                "../../src/Cameras/Inputs/babylon.transitionCameraKeyboardMoveInput.js",
+                "../../src/Cameras/Inputs/babylon.transitionCameraMouseWheelInput.js",
+                "../../src/Cameras/Inputs/babylon.transitionCameraPointersInput.js",
+                "../../src/Cameras/babylon.transitionCamera.js",
+                "../../src/Cameras/babylon.transitionCameraInputsManager.js"                
             ],
             "dependUpon" : [
                 "core"
