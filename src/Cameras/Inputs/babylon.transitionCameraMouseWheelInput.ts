@@ -28,6 +28,12 @@ module BABYLON {
                 if (wheelFactor == 0)
                     return;
 
+                if (event.preventDefault) {
+                    if (!noPreventDefault) {
+                        event.preventDefault();
+                    }
+                }
+
                 this.camera.OnDolly(wheelFactor);
             };
 
