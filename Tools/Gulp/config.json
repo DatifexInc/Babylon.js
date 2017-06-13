@@ -21,6 +21,16 @@
                 "colorCurves", "octrees", "simd", "vr", "virtualJoystick", "optimizations", "highlights", "assetsManager",
                 "mapTexture", "dynamicFloatArray", "serialization", "probes", "layer"
         ],
+        "minimalDataux": [
+                "standardMaterial", "freeCamera", "arcRotateCamera", "transitionCamera", "hemisphericLight", 
+                "pointLight", "directionalLight", "spotLight", "animations", "actions", "picking",
+                "additionalMeshes", "meshBuilder", "additionalTextures", "shadows",
+                "loader", "userData", "touchCamera",
+                "postProcesses", "renderingPipeline", "depthRenderer", "geometryBufferRenderer",
+                "hdr", "polygonMesh", "debug",
+                "optimizations", "highlights", "assetsManager",
+                "mapTexture", "dynamicFloatArray"
+        ],
         "minimal": ["standardMaterial", "freeCamera", "hemisphericLight"],
         "minimalWithBuilder": ["meshBuilder", "standardMaterial", "freeCamera", "hemisphericLight"],
         "minimalViewer": [
