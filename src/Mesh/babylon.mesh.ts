@@ -166,7 +166,15 @@
                 }
 
                 // Deep copy
-                Tools.DeepCopy(source, this, ["name", "material", "skeleton", "instances", "parent", "uniqueId"], ["_poseMatrix"]);
+                Tools.DeepCopy(source, this, ["name", "material", "skeleton", "instances", "parent", "uniqueId",
+                    // Ignore the following 'properties' because they are getter functions,
+                    // with no corresponding setter.  The property that they "get" is
+                    // copied regardless.
+                    "source" ,"hasLODLevels", "geometry", "isBlocked", "areNormalsFrozen",
+                    "facetNb", "isFacetDataEnabled", "useBones",
+                    "worldMatrixFromCache", "absolutePosition", "isWorldMatrixFrozen"],
+                    // List of must-copy
+                    ["_poseMatrix"]);
 
                 // Parent
                 this.parent = source.parent;
