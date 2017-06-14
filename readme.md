@@ -1,6 +1,8 @@
 ```
 #!csh
 
+To develop with this version on babylonjs:
+
 git clone https://github.com/BabylonJS/Babylon.js.git
 cd Tools/Gulp
 npm install
@@ -14,3 +16,19 @@ npm install
 Open the following file in a browser when the server is running:
 
 http://localhost:1338/localDev/index.html
+
+To clone a copy of the babylonjs library (only), for usage:
+
+
+```
+#!csh
+
+mkdir babylonjs
+cd babylonjs
+git init
+git remote add origin https://lfung@bitbucket.org/lfung/babylon.js.git
+git config core.sparseCheckout true
+echo "dist/datifex release" >> .git/info/sparse-checkout
+git pull --depth=1 origin master
+
+```
