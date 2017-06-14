@@ -133,7 +133,6 @@ module BABYLON {
         inputs: TransitionCameraInputsManager; // UI event management
 
         constructor(name:string,
-                    position:Vector3,
                     scene:Scene,
                     yaw_deg:number,
                     pitch_deg:number,
@@ -147,7 +146,10 @@ module BABYLON {
                     tumbleSensitivity:number = 1,
                     trackSensitivity:number = 1,
                     wheelPrecision:number = 3 ) {
-            super(name, position, scene);
+            // position value passed to super class is not used.
+            // Transition camera will re-calculate the camera
+            // position based on the incoming yaw, pitch, distance, fov
+            super(name, new Vector3(0, 0, 0), scene);
 
             this.yaw_deg = new InertialVar(yaw_deg, null, null);
             this.pitch_deg = new InertialVar(pitch_deg,
