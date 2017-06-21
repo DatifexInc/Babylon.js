@@ -1,3 +1,32 @@
+# Babylon.js v2.5.0 with an additional camera: Transition Camera
+
+New Transition Camera has the following properties:
+
+- Switch between perspective and orthographic views
+- Smooth transition between different view points
+
+Interactions:
+
+- Mouse LMB to tumble
+- Mouse RMB to pan
+- Mouse wheel to dolly in and out
+- Hotkeys in perspective view (default):
+	arrow keys = tumble
+	[, ] = dolly out and in
+	Alt + arrow keys = pan
+	LMB = tumble
+	RMB = track
+	f, b, l, r, t, u = go to front, back, left, right, top, underneath camera position
+	F, B, L, R, T, U = switch to orthographic front, back, left, right, top, underneath camera position
+
+- Hotkeys in orthographic view:
+	arrow keys = track
+	[, ] = dolly out, in
+	Alt + arrow keys = track
+	LMB, RMB = track
+	f, b, l, r, t, u = switch to perspective view front, back, left, right, top, underneath
+
+
 Babylon.js
 ==========
 
@@ -114,9 +143,3 @@ While redistributing the Work or Derivative Works thereof, You may choose to off
 
 ## External dependencies
 - hand.js: http://handjs.codeplex.com
-
-
-
-
-
-

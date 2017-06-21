@@ -1,4 +1,12 @@
 ﻿module BABYLON {
+    export interface IRenderTargetOptions {
+        generateMipMaps: boolean,
+        type: number,
+        samplingMode: number,
+        generateDepthBuffer: boolean,
+        generateStencilBuffer: boolean
+    }
+
     export class RenderTargetTexture extends Texture {
         public static _REFRESHRATE_RENDER_ONCE: number = 0;
         public static _REFRESHRATE_RENDER_ONEVERYFRAME: number = 1;
@@ -20,7 +28,7 @@
         * Use this predicate to dynamically define the list of mesh you want to render.
         * If set, the renderList property will be overwritten.
         */
-        public renderListPredicate: (AbstractMesh) => boolean;
+        public renderListPredicate: (AbstractMesh: AbstractMesh) => boolean;
 
         /**
         * Use this list to define the list of mesh you want to render.
@@ -91,17 +99,21 @@
             this._onClearObserver = this.onClearObservable.add(callback);
         }
 
-        private _size: number;
+        protected _size: number;
         public _generateMipMaps: boolean;
-        private _renderingManager: RenderingManager;
+        protected _renderingManager: RenderingManager;
         public _waitingRenderList: string[];
-        private _doNotChangeAspectRatio: boolean;
-        private _currentRefreshId = -1;
-        private _refreshRate = 1;
-        private _textureMatrix: Matrix;
+        protected _doNotChangeAspectRatio: boolean;
+        protected _currentRefreshId = -1;
+        protected _refreshRate = 1;
+        protected _textureMatrix: Matrix;
+        protected _samples = 1;
+        protected _renderTargetOptions: IRenderTargetOptions;
+        public get renderTargetOptions(): IRenderTargetOptions {
+            return this._renderTargetOptions;
+        }
 
-        constructor(name: string, size: any, scene: Scene, generateMipMaps?: boolean, doNotChangeAspectRatio: boolean = true, type: number = Engine.TEXTURETYPE_UNSIGNED_INT, public isCube = false, samplingMode = Texture.TRILINEAR_SAMPLINGMODE, 
-            generateDepthBuffer = true, generateStencilBuffer = false) {
+        constructor(name: string, size: any, scene: Scene, generateMipMaps?: boolean, doNotChangeAspectRatio: boolean = true, type: number = Engine.TEXTURETYPE_UNSIGNED_INT, public isCube = false, samplingMode = Texture.TRILINEAR_SAMPLINGMODE, generateDepthBuffer = true, generateStencilBuffer = false, isMulti = false) {
             super(null, scene, !generateMipMaps);
 
             this.name = name;
@@ -110,32 +122,46 @@
             this._generateMipMaps = generateMipMaps;
             this._doNotChangeAspectRatio = doNotChangeAspectRatio;
 
+            // Rendering groups
+            this._renderingManager = new RenderingManager(scene);
+
+            if (isMulti) {
+                return;
+            }
+
+            this._renderTargetOptions = {
+                generateMipMaps: generateMipMaps,
+                type: type,
+                samplingMode: samplingMode,
+                generateDepthBuffer: generateDepthBuffer,
+                generateStencilBuffer: generateStencilBuffer
+            };
+
             if (samplingMode === Texture.NEAREST_SAMPLINGMODE) {
                 this.wrapU = Texture.CLAMP_ADDRESSMODE;
                 this.wrapV = Texture.CLAMP_ADDRESSMODE;
             }
 
             if (isCube) {
-                this._texture = scene.getEngine().createRenderTargetCubeTexture(size, { 
-                    generateMipMaps: generateMipMaps, 
-                    samplingMode: samplingMode,
-                    generateDepthBuffer: generateDepthBuffer,
-                    generateStencilBuffer: generateStencilBuffer 
-                });
+                this._texture = scene.getEngine().createRenderTargetCubeTexture(size, this._renderTargetOptions);
                 this.coordinatesMode = Texture.INVCUBIC_MODE;
                 this._textureMatrix = Matrix.Identity();
             } else {
-                this._texture = scene.getEngine().createRenderTargetTexture(size, { 
-                    generateMipMaps: generateMipMaps, 
-                    type: type, 
-                    samplingMode: samplingMode,
-                    generateDepthBuffer: generateDepthBuffer,
-                    generateStencilBuffer: generateStencilBuffer 
-                });
+                this._texture = scene.getEngine().createRenderTargetTexture(size, this._renderTargetOptions);
             }
 
-            // Rendering groups
-            this._renderingManager = new RenderingManager(scene);
+        }
+
+        public get samples(): number {
+            return this._samples;
+        }
+
+        public set samples(value: number) {
+            if (this._samples === value) {
+                return;
+            }
+            
+            this._samples = this.getScene().getEngine().updateRenderTargetTextureSampleCount(this._texture, value);
         }
 
         public resetRefreshCounter(): void {
@@ -185,7 +211,7 @@
         public scale(ratio: number): void {
             var newSize = this._size * ratio;
 
-            this.resize(newSize, this._generateMipMaps);
+            this.resize(newSize);
         }
 
         public getReflectionTextureMatrix(): Matrix {
@@ -196,24 +222,21 @@
             return super.getReflectionTextureMatrix();
         }
 
-        public resize(size: any, generateMipMaps?: boolean) {
+        public resize(size: any) {
             this.releaseInternalTexture();
             if (this.isCube) {
-                this._texture = this.getScene().getEngine().createRenderTargetCubeTexture(size);
+                this._texture = this.getScene().getEngine().createRenderTargetCubeTexture(size, this._renderTargetOptions);
             } else {
-                this._texture = this.getScene().getEngine().createRenderTargetTexture(size, generateMipMaps);
+                this._texture = this.getScene().getEngine().createRenderTargetTexture(size, this._renderTargetOptions);
             }
         }
 
         public render(useCameraPostProcess?: boolean, dumpForDebug?: boolean) {
             var scene = this.getScene();
+            var engine = scene.getEngine();
 
             if (this.useCameraPostProcesses !== undefined) {
                 useCameraPostProcess = this.useCameraPostProcesses;
-            }
-
-            if (this.activeCamera && this.activeCamera !== scene.activeCamera) {
-                scene.setTransformMatrix(this.activeCamera.getViewMatrix(), this.activeCamera.getProjectionMatrix(true));
             }
 
             if (this._waitingRenderList) {
@@ -242,6 +265,20 @@
 
             if (this.renderList && this.renderList.length === 0) {
                 return;
+            }
+
+            // Set custom projection.
+            // Needs to be before binding to prevent changing the aspect ratio.
+            if (this.activeCamera) {
+                engine.setViewport(this.activeCamera.viewport);
+
+                if (this.activeCamera !== scene.activeCamera)
+                {
+                    scene.setTransformMatrix(this.activeCamera.getViewMatrix(), this.activeCamera.getProjectionMatrix(true));
+                }
+            }
+            else {
+                engine.setViewport(scene.activeCamera.viewport);
             }
 
             // Prepare renderingManager
@@ -274,6 +311,18 @@
                 }
             }
 
+            for (var particleIndex = 0; particleIndex < scene.particleSystems.length; particleIndex++) {
+                    var particleSystem = scene.particleSystems[particleIndex];
+
+                    if (!particleSystem.isStarted() || !particleSystem.emitter || !particleSystem.emitter.position || !particleSystem.emitter.isEnabled()) {
+                        continue;
+                    }
+
+                    if (currentRenderList.indexOf(particleSystem.emitter) >= 0) {
+                        this._renderingManager.dispatchParticles(particleSystem);
+                    }
+                }
+
             if (this.isCube) {
                 for (var face = 0; face < 6; face++) {
                     this.renderToTarget(face, currentRenderList, currentRenderListLength, useCameraPostProcess, dumpForDebug);
@@ -289,6 +338,7 @@
             if (this.activeCamera && this.activeCamera !== scene.activeCamera) {
                 scene.setTransformMatrix(scene.activeCamera.getViewMatrix(), scene.activeCamera.getProjectionMatrix(true));
             }
+            engine.setViewport(scene.activeCamera.viewport);
 
             scene.resetCachedMaterial();
         }
@@ -330,8 +380,6 @@
                 scene.updateTransformMatrix(true);
             }
 
-            this.onAfterRenderObservable.notifyObservers(faceIndex);
-
             // Dump ?
             if (dumpForDebug) {
                 Tools.DumpFramebuffer(this._size, this._size, engine);
@@ -346,7 +394,11 @@
                     }
                 }
 
-                engine.unBindFramebuffer(this._texture, this.isCube);
+                engine.unBindFramebuffer(this._texture, this.isCube, () => {
+                    this.onAfterRenderObservable.notifyObservers(faceIndex);    
+                });
+            } else {
+                this.onAfterRenderObservable.notifyObservers(faceIndex);
             }
         }
 
@@ -382,7 +434,18 @@
 
         public clone(): RenderTargetTexture {
             var textureSize = this.getSize();
-            var newTexture = new RenderTargetTexture(this.name, textureSize.width, this.getScene(), this._generateMipMaps);
+            var newTexture = new RenderTargetTexture(
+                this.name,
+                textureSize.width,
+                this.getScene(),
+                this._renderTargetOptions.generateMipMaps,
+                this._doNotChangeAspectRatio,
+                this._renderTargetOptions.type,
+                this.isCube,
+                this._renderTargetOptions.samplingMode,
+                this._renderTargetOptions.generateDepthBuffer,
+                this._renderTargetOptions.generateStencilBuffer
+            );
 
             // Base texture
             newTexture.hasAlpha = this.hasAlpha;
@@ -410,6 +473,10 @@
             }
 
             return serializationObject;
+        }
+
+        public dispose(): void {
+            super.dispose();
         }
     }
 }
