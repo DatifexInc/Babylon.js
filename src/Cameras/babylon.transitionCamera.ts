@@ -708,7 +708,19 @@ module BABYLON {
         }
 
         private StateChangeAnimation(startState:CameraState, endState:CameraState) {
-            this.MakeStateAnimation("yaw_deg", "yaw_deg.value", startState.yaw_deg, endState.yaw_deg, this.nFrames);
+            // Make yaw values within 0 to 360
+            var start_yaw = startState.yaw_deg % 360;
+            var end_yaw = endState.yaw_deg % 360;
+
+            // Ensure the closest rotation
+            if(Math.abs(start_yaw - end_yaw) > 180.0) {
+                if((start_yaw - end_yaw) > 0) {
+                    start_yaw -= 360;
+                } else {
+                    start_yaw += 360;
+                }
+            }
+            this.MakeStateAnimation("yaw_deg", "yaw_deg.value", start_yaw, end_yaw, this.nFrames);
             this.MakeStateAnimation("pitch_deg", "pitch_deg.value", startState.pitch_deg, endState.pitch_deg, this.nFrames);
             this.MakeStateAnimation("distance", "distance.value", startState.distance, endState.distance, this.nFrames);
             this.MakeStateAnimation("targetX", "targetX.value", startState.targetPos.x, endState.targetPos.x, this.nFrames);
