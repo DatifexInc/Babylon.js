@@ -14,6 +14,8 @@
         */ 
         public enablePixelPerfectMode = false;
 
+        public samples = 1;
+
         private _camera: Camera;
         private _scene: Scene;
         private _engine: Engine;
@@ -25,8 +27,10 @@
         private _effect: Effect;
         private _samplers: string[];
         private _fragmentUrl: string;
+        private _vertexUrl: string;
         private _parameters: string[];
         private _scaleRatio = new Vector2(1, 1);
+        protected _indexParameters: any;
 
         // Events
 
@@ -100,7 +104,7 @@
             this._onAfterRenderObserver = this.onAfterRenderObservable.add(callback);
         }
 
-        constructor(public name: string, fragmentUrl: string, parameters: string[], samplers: string[], options: number | PostProcessOptions, camera: Camera, samplingMode: number = Texture.NEAREST_SAMPLINGMODE, engine?: Engine, reusable?: boolean, defines?: string, textureType: number = Engine.TEXTURETYPE_UNSIGNED_INT) {
+        constructor(public name: string, fragmentUrl: string, parameters: string[], samplers: string[], options: number | PostProcessOptions, camera: Camera, samplingMode: number = Texture.NEAREST_SAMPLINGMODE, engine?: Engine, reusable?: boolean, defines?: string, textureType: number = Engine.TEXTURETYPE_UNSIGNED_INT, vertexUrl: string = "postprocess", indexParameters?: any, blockCompilation = false) {
             if (camera != null) {
                 this._camera = camera;
                 this._scene = camera.getScene();
@@ -120,18 +124,33 @@
             this._samplers.push("textureSampler");
 
             this._fragmentUrl = fragmentUrl;
+            this._vertexUrl = vertexUrl;
             this._parameters = parameters || [];
 
             this._parameters.push("scale");
 
-            this.updateEffect(defines);
+            this._indexParameters = indexParameters;
+
+            if (!blockCompilation) {
+                this.updateEffect(defines);
+            }
         }
+
+        public getEngine(): Engine {
+            return this._engine;
+        }        
         
-        public updateEffect(defines?: string) {
-            this._effect = this._engine.createEffect({ vertex: "postprocess", fragment: this._fragmentUrl },
+        public updateEffect(defines?: string, uniforms?: string[], samplers?: string[], indexParameters?: any) {
+            this._effect = this._engine.createEffect({ vertex: this._vertexUrl, fragment: this._fragmentUrl },
                 ["position"],
-                this._parameters,
-                this._samplers, defines !== undefined ? defines : "");
+                uniforms || this._parameters,
+                samplers || this._samplers, 
+                defines !== undefined ? defines : "",
+                null,
+                null,
+                null,
+                indexParameters || this._indexParameters
+                );
         }
 
         public isReusable(): boolean {
@@ -193,6 +212,12 @@
                 this.onSizeChangedObservable.notifyObservers(this);
             }
 
+            this._textures.forEach(texture => {
+                if (texture.samples !== this.samples) {
+                    this._engine.updateRenderTargetTextureSampleCount(texture, this.samples);
+                }
+            });
+
             if (this.enablePixelPerfectMode) {
                 this._scaleRatio.copyFromFloats(requiredWidth / desiredWidth, requiredHeight / desiredHeight);
                 this._engine.bindFramebuffer(this._textures.data[this._currentRenderTextureInd], 0, requiredWidth, requiredHeight);
@@ -222,7 +247,7 @@
 
         public apply(): Effect {
             // Check
-            if (!this._effect.isReady())
+            if (!this._effect || !this._effect.isReady())
                 return null;
 
             // States
@@ -243,14 +268,14 @@
         }
 
         public dispose(camera?: Camera): void {
-            camera = camera || this._camera;
+            camera = camera || this._camera;            
 
             if (this._textures.length > 0) {
                 for (var i = 0; i < this._textures.length; i++) {
                     this._engine._releaseTexture(this._textures.data[i]);
                 }
-                this._textures.reset();
             }
+            this._textures.dispose();
 
             if (!camera) {
                 return;

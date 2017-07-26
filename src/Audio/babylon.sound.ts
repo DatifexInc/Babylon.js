@@ -1,4 +1,4 @@
-﻿module BABYLON {
+module BABYLON {
     export class Sound {
         public name: string;
         public autoplay: boolean = false;
@@ -161,6 +161,7 @@
                     }
                     else {
                         if (!codecSupportedFound) {
+                            this._isReadyToPlay = true;
                             // Simulating a ready to play event to avoid breaking code path
                             if (this._readyToPlayCallback) {
                                 window.setTimeout(() => {
@@ -226,6 +227,10 @@
             }
         }
 
+        public isReady(): boolean {
+            return this._isReadyToPlay;
+        }
+
         private _soundLoaded(audioData: ArrayBuffer) {
             this._isLoaded = true;
             Engine.audioEngine.audioContext.decodeAudioData(audioData, (buffer) => {
@@ -284,14 +289,14 @@
                     this._soundPanner.maxDistance = Number.MAX_VALUE;
                     this._soundPanner.refDistance = 1;
                     this._soundPanner.rolloffFactor = 1;
-                    this._soundPanner.panningModel = this._panningModel;
+                    this._soundPanner.panningModel = this._panningModel as any;
                 }
                 else {
-                    this._soundPanner.distanceModel = this.distanceModel;
+                    this._soundPanner.distanceModel = this.distanceModel as any;
                     this._soundPanner.maxDistance = this.maxDistance;
                     this._soundPanner.refDistance = this.refDistance;
                     this._soundPanner.rolloffFactor = this.rolloffFactor;
-                    this._soundPanner.panningModel = this._panningModel;
+                    this._soundPanner.panningModel = this._panningModel as any;
                 }
             }
         }
@@ -308,7 +313,7 @@
 
         private _switchPanningModel() {
             if (Engine.audioEngine.canUseWebAudio && this.spatialSound) {
-                this._soundPanner.panningModel = this._panningModel;
+                this._soundPanner.panningModel = this._panningModel as any;
             }
         }
 
