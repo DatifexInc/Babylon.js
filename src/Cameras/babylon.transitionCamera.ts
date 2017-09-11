@@ -642,6 +642,13 @@ module BABYLON {
         //
 
         MoveCamera(_target:Vector3, _radius:number, _pitch_deg:number, _yaw_deg:number): void {
+            var currState:CameraState = this._getCurrState();
+            // If necessary, switch from orthographic to perspective
+            if (currState.ortho) {
+                currState.ortho = false;
+                this.StateChange(currState); // 'jump' from ortho to perspective, same viewpoint
+            }
+            // Move the camera to the target position with animation
             if (isPresent(_target)) {
                 this.MakeStateAnimation("targetX", "targetX.value", this.targetX.value, _target.x, this.nFrames);
                 this.MakeStateAnimation("targetY", "targetY.value", this.targetY.value, _target.y, this.nFrames);
@@ -654,7 +661,19 @@ module BABYLON {
                 this.MakeStateAnimation("pitch_deg", "pitch_deg.value", this.pitch_deg.value, _pitch_deg, this.nFrames);
             }
             if (isPresent(_yaw_deg)) {
-                this.MakeStateAnimation("yaw_deg", "yaw_deg.value", this.yaw_deg.value, _yaw_deg, this.nFrames);
+                // Avoid 'unwinding' behavior by forcing yaw values within 0 to 360
+                var start_yaw = this.yaw_deg.value % 360;
+                var end_yaw = _yaw_deg % 360;
+
+                // Ensure the closest rotation
+                if(Math.abs(start_yaw - end_yaw) > 180.0) {
+                    if((start_yaw - end_yaw) > 0) {
+                        start_yaw -= 360;
+                    } else {
+                        start_yaw += 360;
+                    }
+                }
+                this.MakeStateAnimation("yaw_deg", "yaw_deg.value", start_yaw, end_yaw, this.nFrames);
             }
             if (this.animations.length > 0) {
                 // Begin the animation with a callback to remove stopped animations afterwards
